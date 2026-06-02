@@ -6,23 +6,23 @@ default:
     @just --list
 
 # Check flake evaluation
-check:
-    nix flake check
+check *args:
+    nix flake check {{args}}
 
 # Build the netboot image and start the PXE server
-netboot:
-    sudo nix run .#nxbooter
+netboot *args:
+    sudo nix run .#nxbooter -- {{args}}
 
 # Build the ISO image
-build-iso:
-    nix build .#nixosConfigurations.ghost-iso.config.system.build.isoImage
+build-iso *args:
+    nix build .#nixosConfigurations.ghost-iso.config.system.build.isoImage {{args}}
 
 # Flash the generated ISO to a USB device
-flash-usb device="/dev/sda":
+flash-usb device=disk_device:
     @echo "WARNING: This will format the device {{device}}. Are you sure? [y/N]"
     @read ans && [ $${ans:-N} = y ]
     sudo dd if=$(readlink -f result/iso/nixos-*.iso) of={{device}} bs=4M status=progress
 
 # Remote deployment using nixos-anywhere
-anywhere:
-    nix run github:nix-community/nixos-anywhere -- --flake .#ghost --target-host {{host}} --disk-encryption-keys /tmp/keys /tmp/keys
+anywhere target=host *args:
+    nix run github:nix-community/nixos-anywhere -- --flake .#ghost --target-host {{target}} {{args}}
