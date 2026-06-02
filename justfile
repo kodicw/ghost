@@ -19,14 +19,15 @@ build-iso *args:
 
 # Flash the generated ISO to a USB device
 flash-usb device=disk_device:
-    @printf "WARNING: This will format the device {{device}}. Are you sure? [y/N] "
-    @read ans; \
-     if [ "$$ans" = "y" ] || [ "$$ans" = "Y" ]; then \
-       sudo dd if=$(readlink -f result/iso/nixos-*.iso) of={{device}} bs=4M status=progress; \
-     else \
-       echo "Aborted."; \
-       exit 1; \
-     fi
+    #!/usr/bin/env bash
+    printf "WARNING: This will format the device {{device}}. Are you sure? [y/N] "
+    read -r ans
+    if [[ "$ans" =~ ^[yY]$ ]]; then
+        sudo dd if=$(readlink -f result/iso/nixos-*.iso) of={{device}} bs=4M status=progress
+    else
+        echo "Aborted."
+        exit 1
+    fi
 
 # Remote deployment using nixos-anywhere
 anywhere target=host *args:
