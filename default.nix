@@ -11,12 +11,14 @@
     preserveAt."/persistent" = {
       directories = [
         "/var/lib/docker"
+        "/var/lib/portainer"
         "/var/lib/tailscale"
         "/var/lib/nixos"
         "/var/lib/systemd"
         "/var/log"
         "/etc/ssh"
         "/etc/NetworkManager/system-connections"
+        "/opt"
       ];
       files = [
         "/etc/machine-id"
