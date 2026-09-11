@@ -23,8 +23,28 @@ persistent storage entirely.
 
 ## Prerequisites
 
-Ghost is built with [Nix](https://nixos.org). If you don't have it,
-install via [Determinate Systems](https://determinate.systems/nix-installer/)
+### Windows — Install WSL2 first
+
+If you're on Windows, you need WSL2 with an Ubuntu or Debian distro before
+installing Nix. Open **PowerShell as Administrator** and run:
+
+```powershell
+# Install WSL2 with Ubuntu (default)
+wsl --install
+
+# Or pick Debian instead
+wsl --install -d Debian
+```
+
+Restart your machine when prompted. After reboot, Ubuntu/Debian will open
+automatically — create your UNIX username and password, then continue below.
+
+> Already on Linux or macOS? Skip straight to the Nix install.
+
+### Install Nix
+
+Inside your Linux terminal (WSL2, Ubuntu, Debian, or any distro), install Nix
+via [Determinate Systems](https://determinate.systems/nix-installer/)
 (flakes enabled by default, clean uninstall support):
 
 ```bash
@@ -38,7 +58,7 @@ nix --version
 ```
 
 > **Note:** You do NOT need NixOS on your dev machine. Nix runs on any Linux
-> distro. NixOS is only needed on the Ghost target hardware itself.
+> distro (including WSL2). NixOS is only needed on the Ghost target hardware.
 
 ---
 
