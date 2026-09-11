@@ -139,7 +139,34 @@
       };
 
       devShells.${system}.default = pkgs.mkShell {
-        buildInputs = [ pkgs.just ];
+        buildInputs = with pkgs; [
+          # Task runner
+          just
+
+          # NixOS deployment
+          nixos-rebuild
+
+          # Infrastructure
+          opentofu
+
+          # Configuration management
+          ansible
+          ansible-lint
+          sshpass
+
+          # OpenSpec (spec-driven workflow)
+          nodePackages.nodejs
+        ];
+
+        shellHook = ''
+          # Make npx-installed tools available
+          export PATH="$HOME/.npm-global/bin:$PATH"
+
+          echo "👻 Ghost dev shell"
+          echo "   just          — run 'just' to see all commands"
+          echo "   nix flake check — validate the flake"
+          echo ""
+        '';
       };
     };
 }

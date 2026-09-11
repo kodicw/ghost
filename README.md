@@ -64,8 +64,14 @@ nix --version
 
 ## Quick Start
 
+**All work on this project happens inside the Nix dev shell.** It provides
+every tool you need — no manual installs required.
+
 ```bash
-# Enter the dev shell
+# Clone the repo
+git clone https://github.com/kodicw/ghost.git && cd ghost
+
+# Enter the dev shell (first run downloads dependencies automatically)
 nix develop
 
 # Build locally (verify config compiles)
@@ -77,6 +83,22 @@ just check-vm
 # Deploy to hardware (see docs/deploying.md for the full workflow)
 just deploy target=root@<ip>
 ```
+
+### What `nix develop` gives you
+
+| Tool | Version | Purpose |
+|---|---|---|
+| `just` | latest | Task runner — `just` to see all commands |
+| `nixos-rebuild` | latest | Deploy NixOS configs to remote hosts |
+| `tofu` | latest | OpenTofu for GCP infrastructure |
+| `ansible` | latest | Configuration management & automation |
+| `ansible-lint` | latest | Lint Ansible playbooks |
+| `sshpass` | latest | SSH password auth (for initial provisioning) |
+| `node` / `npx` | latest | Run OpenSpec CLI (`npx @fission-ai/openspec@latest`) |
+
+> **Important:** Always run `nix develop` before working on the project.
+> It ensures everyone has identical tooling regardless of their host OS.
+> You don't need to install any of the above tools manually.
 
 ## System Configurations
 
