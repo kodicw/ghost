@@ -21,6 +21,34 @@ persistent storage entirely.
 
 ---
 
+## Prerequisites
+
+Ghost is built with [Nix](https://nixos.org). If you're on Ubuntu or Debian,
+install it first:
+
+```bash
+# Install Nix (multi-user daemon mode — recommended)
+sh <(curl -L https://nixos.org/nix/install) --daemon
+```
+
+Log out and back in (or open a new terminal), then enable flakes:
+
+```bash
+mkdir -p ~/.config/nix
+echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
+```
+
+Verify it works:
+
+```bash
+nix --version
+```
+
+> **Note:** You do NOT need NixOS on your dev machine. Nix runs on any Linux
+> distro. NixOS is only needed on the Ghost target hardware itself.
+
+---
+
 ## Quick Start
 
 ```bash
