@@ -214,6 +214,7 @@ attack surface breakdown.
 | Document | Contents |
 |---|---|
 | [Architecture & Security](docs/architecture.md) | 8-layer system design, zRAM rationale, attack surface analysis |
+| [Hardware Efficiency](docs/hardware-efficiency.md) | Why zstd, btrfs, zRAM, noatime — cost analysis and compression math |
 | [Deploying to Hardware](docs/deploying.md) | `dry-activate` → `test` → `switch` workflow with recovery steps |
 | [Drive & Storage Config](docs/drive-config.md) | Disk layout, btrfs subvolumes, disko, preservation details |
 
