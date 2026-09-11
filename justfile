@@ -30,5 +30,55 @@ flash-usb device=disk_device:
     fi
 
 # Remote deployment using nixos-anywhere
-anywhere target=host *args:
+anywhere target=host device=disk_device *args:
     nix run github:nix-community/nixos-anywhere -- --flake .#ghost --target-host {{target}} {{args}}
+
+# Switch the configuration on a running system
+deploy target="root@192.168.1.53" *args:
+    nixos-rebuild switch --flake .#ghost --target-host {{target}} --sudo {{args}}
+
+# Build the system configuration locally to check for errors
+test:
+    nix build .#nixosConfigurations.ghost.config.system.build.toplevel
+
+# Run VM integration test: proves tmpfs root + persistent data across reboot
+check-vm *args:
+    nix build .#checks.x86_64-linux.persistence -L {{args}}
+
+# ── GCP Infrastructure (OpenTofu) ────────────────────────────────
+
+# Initialize OpenTofu with remote state
+gcp-init:
+    cd infra/gcp && tofu init -backend-config="bucket=ghost-tofu-state" -backend-config="prefix=gcp/ghost"
+
+# Plan GCP infrastructure changes
+gcp-plan:
+    cd infra/gcp && tofu plan -out=tfplan
+
+# Apply GCP infrastructure changes
+gcp-apply:
+    cd infra/gcp && tofu apply tfplan
+
+# Format all OpenTofu files
+gcp-fmt:
+    cd infra/gcp && tofu fmt -recursive
+
+# Validate OpenTofu configuration
+gcp-validate:
+    cd infra/gcp && tofu validate
+
+# Show current GCP state
+gcp-show:
+    cd infra/gcp && tofu show
+
+# List all GCP resources in state
+gcp-state-list:
+    cd infra/gcp && tofu state list
+
+# Tear down all GCP infrastructure
+gcp-destroy:
+    cd infra/gcp && tofu destroy
+
+# Show GCP output values
+gcp-output:
+    cd infra/gcp && tofu output
