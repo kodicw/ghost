@@ -1,0 +1,13 @@
+schema: spec-driven
+
+context: |
+  Ghost: Bare minimum NixOS Docker host that runs entirely in RAM (tmpfs root)
+  with explicit persistence via nix-community/preservation.
+
+  Tech stack: NixOS, Nix flakes, disko, btrfs, systemd-boot, Docker, Ansible, OpenTofu
+  Architecture: tmpfs root (3G), btrfs /nix + /persistent, zRAM swap (no disk swap)
+  Security model: Nothing persists unless explicitly whitelisted in preservation.nix
+  Deployment: nixos-rebuild (dry-activate → test → switch) or nixos-anywhere
+  Configs: ghost (docker host), ghost-fs (storage), ghost-netboot (PXE), ghost-iso (installer)
+  Users: root, charles (managed via polarbear flake input)
+  We use conventional commits.
