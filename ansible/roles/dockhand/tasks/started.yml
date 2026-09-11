@@ -1,0 +1,10 @@
+---
+# # dockhand/tasks/started.yml — ensure running, no-op if already up
+# ──────────────────────────────────────────────────────────
+- ansible.builtin.import_tasks: status.yml
+
+- name: Start dockhand container
+  community.docker.docker_container:
+    name: dockhand
+    state: started
+  when: dockhand_status != 'running'

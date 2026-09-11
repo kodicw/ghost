@@ -1,0 +1,22 @@
+---
+# ──────────────────────────────────────────────────────────
+# grist/tasks/absent.yml — remove container + data
+# NOTE: Skipped on NixOS-managed hosts
+# ──────────────────────────────────────────────────────────
+- ansible.builtin.import_tasks: status.yml
+
+- name: Fail if NixOS-managed
+  ansible.builtin.fail:
+    msg: "Grist is NixOS-managed. Remove it from your Nix config instead."
+  when: grist_nixos_managed
+
+- name: Stop and remove grist container
+  community.docker.docker_container:
+    name: grist
+    state: absent
+
+- name: Remove grist data directory
+  ansible.builtin.file:
+    path: "{{ grist_data_dir | default('/var/lib/grist') }}"
+    state: absent
+  when: grist_purge_data | default(false)

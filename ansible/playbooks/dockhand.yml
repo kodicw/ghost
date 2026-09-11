@@ -1,0 +1,53 @@
+---
+# ──────────────────────────────────────────────────────────
+# Dockhand — full lifecycle management
+#
+# Usage:
+#   ansible-playbook -i inventory/production/ghost playbooks/dockhand.yml \ 
+#     -e dockhand_state=present
+#   ansible-playbook -i inventory/production/ghost playbooks/dockhand.yml \ 
+#     -e dockhand_state=stopped
+#   ansible-playbook -i inventory/production/ghost playbooks/dockhand.yml \ 
+#     -e dockhand_state=restarted
+#   ansible-playbook -i inventory/production/ghost playbooks/dockhand.yml \ 
+#     -e dockhand_state=updated  -e dockhand_update_tag=fnsys/dockhand:v2
+#   ansible-playbook -i inventory/production/ghost playbooks/dockhand.yml \ 
+#     -e dockhand_state=rolled_back
+#   ansible-playbook -i inventory/production/ghost playbooks/dockhand.yml \ 
+#     -e dockhand_state=backed_up
+#   ansible-playbook -i inventory/production/ghost playbooks/dockhand.yml \ 
+#     -e dockhand_state=restored -e dockhand_restore_file=/path/to/backup.tar.gz
+#   ansible-playbook -i inventory/production/ghost playbooks/dockhand.yml \ 
+#     -e dockhand_state=absent  -e dockhand_purge_volume=true
+#   ansible-playbook -i inventory/production/ghost playbooks/dockhand.yml \ 
+#     -e dockhand_state=info
+#   ansible-playbook -i inventory/production/ghost playbooks/dockhand.yml \ 
+#     -e dockhand_state=logs   -e dockhand_log_lines=100
+# ──────────────────────────────────────────────────────────
+- name: Gather facts
+  hosts: all
+  gather_facts: true
+
+- name: Dockhand lifecycle — {{ dockhand_state | default('present') }}
+  hosts: all
+  become: true
+  vars:
+    dockhand_state: "{{ dockhand_state | default('present') }}"
+  roles:
+    - dockhand
+  post_tasks:
+    - name: Verify dockhand is healthy
+      when: dockhand_state in ['present', 'started', 'restarted', 'updated', 'rolled_back']
+      block:
+        - name: Wait for health check
+          ansible.builtin.uri:
+            url: "http://localhost:{{ dockhand_port | default(3000) }}/"
+            status_code: 200
+          retries: 5
+          delay: 3
+          register: health
+          until: health.status == 200
+
+        - name: Dockhand is healthy
+          ansible.builtin.debug:
+            msg: "✅ dockhand responded on port {{ dockhand_port | default(3000) }}"

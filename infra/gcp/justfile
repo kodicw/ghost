@@ -1,0 +1,63 @@
+# ── Ghost GCP Infrastructure Justfile ─────────────────────────────
+
+project_id := env_var_or_default("PROJECT_ID", "")
+region     := env_var_or_default("REGION", "us-central1")
+client     := env_var_or_default("CLIENT", "ghost")
+
+# Initialize OpenTofu with remote state backend
+init:
+    tofu init -backend-config="bucket=ghost-tofu-state" -backend-config="prefix=gcp/{{client}}"
+
+# Format all .tf files
+fmt:
+    tofu fmt -recursive
+
+# Validate configuration
+validate:
+    tofu validate
+
+# Plan infrastructure changes
+plan:
+    tofu plan -out=tfplan
+
+# Apply planned changes
+apply:
+    tofu apply tfplan
+
+# Show current state
+show:
+    tofu show
+
+# List all resources in state
+state-list:
+    tofu state list
+
+# Preview destroy (without executing)
+plan-destroy:
+    tofu plan -destroy -out=tfplan
+
+# Destroy all infrastructure
+destroy:
+    tofu destroy
+
+# Output all values
+output:
+    tofu output
+
+# Refresh state
+refresh:
+    tofu refresh
+
+# Workspace management
+workspace-list:
+    tofu workspace list
+
+workspace-new name:
+    tofu workspace new {{name}}
+
+workspace-select name:
+    tofu workspace select {{name}}
+
+# Show provider versions
+version:
+    tofu version

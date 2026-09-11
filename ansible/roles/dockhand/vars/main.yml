@@ -1,0 +1,18 @@
+---
+# ──────────────────────────────────────────────────────────
+# dockhand/vars/main.yml
+# ──────────────────────────────────────────────────────────
+dockhand_port: 3000
+dockhand_image: fnsys/dockhand:latest
+dockhand_volume: dockhand_data
+dockhand_restart_policy: unless-stopped
+dockhand_force_pull: false
+dockhand_backup_retention_days: 7
+dockhand_log_lines: 50
+
+dockhand_env:
+  PORT: "3000"
+  HOST: "0.0.0.0"
+  DATA_DIR: "/app/data"
+  PUID: "1001"
+  PGID: "1001"

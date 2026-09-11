@@ -1,0 +1,37 @@
+# ── GCP OpenTofu Config — Example Variables ───────────────────────
+# Copy this to terraform.tfvars and fill in real values.
+# Never commit terraform.tfvars to git.
+
+project_id = "your-gcp-project-id"
+region     = "us-central1"
+environment = "prod"
+client_name = "ghost"
+
+# Grist
+grist_image          = "gristlabs/grist:latest"
+grist_cpu            = "2"
+grist_memory         = "1Gi"
+grist_min_instances  = 0
+grist_max_instances  = 3
+grist_concurrency    = 80
+grist_session_secret = "change-me-to-a-long-random-string"
+grist_boot_key       = "change-me-boot-key"
+grist_api_key        = "change-me-api-key"
+grist_single_org     = "docs"
+grist_app_home_url   = "https://grist.ghost.local"
+
+# Database
+db_tier                = "db-f1-micro"
+db_disk_size           = 10
+db_disk_auto_resize    = true
+db_disk_auto_resize_limit = 100
+db_name                = "grist"
+# db_password            = "auto-generated-if-null"
+
+# Storage
+storage_bucket_location = "US"
+storage_retention_days  = 30
+
+# Networking
+vpc_name         = "ghost-vpc"
+vpc_subnet_cidr  = "10.0.0.0/24"

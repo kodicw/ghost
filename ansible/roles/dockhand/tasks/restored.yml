@@ -1,0 +1,44 @@
+---
+# ──────────────────────────────────────────────────────────
+# dockhand/tasks/restored.yml — restore volume from snapshot
+# ──────────────────────────────────────────────────────────
+
+- name: Stop dockhand before restore
+  community.docker.docker_container:
+    name: dockhand
+    state: stopped
+
+- name: List available backups
+  ansible.builtin.find:
+    paths: /var/backups/dockhand
+    patterns: "dockhand-*.tar.gz"
+  register: available_backups
+
+- name: Fail if no backups found
+  ansible.builtin.fail:
+    msg: "No dockhand backups found in /var/backups/dockhand"
+  when: available_backups.files | length == 0
+
+- name: Select backup to restore
+  ansible.builtin.set_fact:
+    restore_file: >-
+      {%- if dockhand_restore_file is defined -%}
+        {{ dockhand_restore_file }}
+      {%- else -%}
+        {{ (available_backups.files | sort(attribute='mtime') | last).path }}
+      {%- endif -%}
+
+- name: Restore volume from {{ restore_file }}
+  ansible.builtin.shell: |
+    docker run --rm \
+      -v {{ dockhand_volume | default('dockhand_data') }}:/target \
+      -v /var/backups/dockhand:/backup:ro \
+      alpine \
+      sh -c 'rm -rf /target/* && tar xzf /backup/{{ restore_file | basename }} -C /target'
+  args:
+    executable: /bin/sh
+
+- name: Restart dockhand after restore
+  community.docker.docker_container:
+    name: dockhand
+    state: started

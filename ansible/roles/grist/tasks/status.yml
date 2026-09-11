@@ -1,0 +1,35 @@
+---
+# ──────────────────────────────────────────────────────────
+# grist/tasks/status.yml — inspect container state
+# Sets: grist_status, grist_status_summary
+#       grist_image_current, grist_created_at
+# ──────────────────────────────────────────────────────────
+- name: Gather grist container info
+  community.docker.docker_container_info:
+    name: grist
+  register: grist_info
+
+- name: Classify container state
+  ansible.builtin.set_fact:
+    grist_status: >-
+      {%- if not grist_info.exists -%}absent
+      {%- elif grist_info.container.State.Status == 'running' -%}running
+      {%- else -%}stopped
+      {%- endif -%}
+    grist_image_current: "{{ grist_info.container.Image | default('') }}"
+    grist_created_at: "{{ grist_info.container.Created | default('') }}"
+
+- name: Build status summary
+  ansible.builtin.set_fact:
+    grist_status_summary: >-
+      {%- if grist_status == 'absent' -%}
+        ❌ not deployed
+      {%- elif grist_status == 'running' -%}
+        ✅ running — image: {{ grist_image_current | truncate(19, True, '…') }}
+        {%- if grist_nixos_managed -%}(NixOS-managed){%- endif -%}
+      {%- elif grist_status == 'stopped' -%}
+        ⏸️  stopped
+        {%- if grist_nixos_managed -%}(NixOS will restore on rebuild){%- endif -%}
+      {%- else -%}
+        ⚠️  {{ grist_status }}
+      {%- endif -%}

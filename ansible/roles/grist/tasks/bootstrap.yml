@@ -1,0 +1,116 @@
+---
+# ──────────────────────────────────────────────────────────
+# grist/tasks/bootstrap.yml — automate first-run setup via API
+#
+# Flow:
+#   1. Fetch BOOT KEY from container logs
+#   2. POST /api/boot/signin to verify key
+#   3. POST /api/setup/quick to run Quick Setup wizard
+#   4. POST /api/admin/config to finalize
+# ──────────────────────────────────────────────────────────
+
+- name: Check if Grist has already been bootstrapped
+  ansible.builtin.uri:
+    url: "http://localhost:{{ grist_port | default(8484) }}/api/setup/quick"
+    method: GET
+    status_code: [200, 404]
+  register: setup_check
+  ignore_errors: true
+
+- name: Bootstrap Grist if not yet configured
+  when: setup_check.status == 404 or vault_grist_boot_key is defined
+  block:
+    - name: Fetch boot key from container logs
+      ansible.builtin.shell: |
+        docker logs grist 2>&1 | grep -oP 'BOOT KEY:\s*\K.+'
+      register: boot_key_output
+      failed_when: boot_key_output.stdout == "" and vault_grist_boot_key is not defined
+      changed_when: false
+
+    - name: Set boot key fact
+      ansible.builtin.set_fact:
+        grist_boot_key: "{{ vault_grist_boot_key | default(boot_key_output.stdout) }}"
+
+    - name: Sign in with boot key
+      ansible.builtin.uri:
+        url: "http://localhost:{{ grist_port | default(8484) }}/api/boot/signin"
+        method: POST
+        body_format: json
+        body:
+          key: "{{ grist_boot_key }}"
+        status_code: 200
+      register: boot_signin
+
+    - name: Run Quick Setup — step 1 (server)
+      ansible.builtin.uri:
+        url: "http://localhost:{{ grist_port | default(8484) }}/api/setup/quick"
+        method: POST
+        body_format: json
+        body:
+          baseUrl: "{{ grist_env.APP_HOME_URL | default('http://localhost:8484') }}"
+          edition: "{{ grist_edition | default('community') }}"
+        status_code: 200
+        headers:
+          Cookie: "{{ boot_signin.cookies_string }}"
+
+    - name: Run Quick Setup — step 2 (sandbox)
+      ansible.builtin.uri:
+        url: "http://localhost:{{ grist_port | default(8484) }}/api/setup/quick"
+        method: POST
+        body_format: json
+        body:
+          sandboxFlavor: "{{ grist_sandbox | default('pyodide') }}"
+        status_code: 200
+        headers:
+          Cookie: "{{ boot_signin.cookies_string }}"
+
+    - name: Run Quick Setup — step 3 (auth)
+      ansible.builtin.uri:
+        url: "http://localhost:{{ grist_port | default(8484) }}/api/setup/quick"
+        method: POST
+        body_format: json
+        body:
+          authMethod: "{{ grist_auth_method | default('none') }}"
+        status_code: 200
+        headers:
+          Cookie: "{{ boot_signin.cookies_string }}"
+
+    - name: Run Quick Setup — step 4 (backups)
+      ansible.builtin.uri:
+        url: "http://localhost:{{ grist_port | default(8484) }}/api/setup/quick"
+        method: POST
+        body_format: json
+        body:
+          backupStorage: "{{ grist_backup_storage | default('none') }}"
+        status_code: 200
+        headers:
+          Cookie: "{{ boot_signin.cookies_string }}"
+
+    - name: Run Quick Setup — step 5 (apply permissions)
+      ansible.builtin.uri:
+        url: "http://localhost:{{ grist_port | default(8484) }}/api/setup/quick"
+        method: POST
+        body_format: json
+        body:
+          allowTeamSites: false
+          allowPersonalSites: true
+          allowAnonymous: "{{ grist_allow_anonymous | default(false) }}"
+          allowAnonPlayground: false
+        status_code: 200
+        headers:
+          Cookie: "{{ boot_signin.cookies_string }}"
+
+    - name: Finalize — apply and go live
+      ansible.builtin.uri:
+        url: "http://localhost:{{ grist_port | default(8484) }}/api/setup/quick/apply"
+        method: POST
+        body_format: json
+        body: {}
+        status_code: 200
+        headers:
+          Cookie: "{{ boot_signin.cookies_string }}"
+      register: apply_result
+
+    - name: Grist bootstrap complete
+      ansible.builtin.debug:
+        msg: "✅ Grist bootstrapped and live at {{ grist_env.APP_HOME_URL | default('http://localhost:8484') }}"

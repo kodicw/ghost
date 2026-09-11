@@ -1,0 +1,14 @@
+---
+# ──────────────────────────────────────────────────────────
+# grist/tasks/logs.yml — fetch recent container logs
+# ──────────────────────────────────────────────────────────
+- name: Fetch grist logs
+  community.docker.docker_container_logs:
+    name: grist
+    tail_lines: "{{ grist_log_lines | default(50) }}"
+    follow: false
+  register: grist_logs
+
+- name: Display logs
+  ansible.builtin.debug:
+    msg: "{{ grist_logs.stdout_lines | default([]) | join('\n') }}"

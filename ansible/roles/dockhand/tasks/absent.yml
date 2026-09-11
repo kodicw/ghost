@@ -1,0 +1,17 @@
+---
+# ──────────────────────────────────────────────────────────
+# dockhand/tasks/absent.yml — remove container + optional volume
+# ──────────────────────────────────────────────────────────
+- ansible.builtin.import_tasks: status.yml
+
+- name: Stop and remove dockhand container
+  community.docker.docker_container:
+    name: dockhand
+    state: absent
+  when: dockhand_status != 'absent'
+
+- name: Remove dockhand data volume
+  community.docker.docker_volume:
+    name: "{{ dockhand_volume | default('dockhand_data') }}"
+    state: absent
+  when: dockhand_purge_volume | default(false)

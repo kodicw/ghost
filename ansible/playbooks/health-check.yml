@@ -1,0 +1,13 @@
+---
+# ──────────────────────────────────────────────────────────
+# Health check — verify all services respond
+# Usage: ansible-playbook -i inventory/production/ghost playbooks/health-check.yml
+# ──────────────────────────────────────────────────────────
+- name: Run health checks
+  hosts: all
+  gather_facts: false
+  tasks:
+    - import_role:
+        name: common
+        tasks_from: health
+  tags: [health]

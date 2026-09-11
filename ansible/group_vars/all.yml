@@ -1,0 +1,17 @@
+---
+# ──────────────────────────────────────────────────────────
+# Global defaults — lowest priority, overridden per client
+# ──────────────────────────────────────────────────────────
+
+docker_network: bridge
+docker_restart_policy: unless-stopped
+
+# Common packages to ensure on host
+common_packages:
+  - curl
+  - docker-ce
+  - jq
+
+# Default health check retry
+health_retries: 5
+health_delay: 5

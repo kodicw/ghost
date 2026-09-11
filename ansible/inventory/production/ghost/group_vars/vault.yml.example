@@ -1,0 +1,18 @@
+---
+# ──────────────────────────────────────────────────────────
+# Vault-encrypted secrets — encrypt with:
+#   ansible-vault encrypt inventory/production/ghost/group_vars/vault.yml
+#   ansible-vault decrypt inventory/production/ghost/group_vars/vault.yml
+# ──────────────────────────────────────────────────────────
+
+# Grist secrets
+vault_grist_session_secret: CHANGE_ME
+vault_grist_admin_email: admin@ghost.local
+vault_grist_boot_key: CHANGE_ME_BOOT_KEY
+
+# Grist API — used for post-deploy automation
+vault_grist_api_key: CHANGE_ME_GRIST_API_KEY
+
+# Auth (if configuring OIDC/SAML via Grist Admin API)
+vault_auth_client_id: ""
+vault_auth_client_secret: ""

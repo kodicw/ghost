@@ -1,0 +1,17 @@
+---
+# ──────────────────────────────────────────────────────────
+# grist/vars/main.yml
+# ──────────────────────────────────────────────────────────
+grist_port: 8484
+grist_image: gristlabs/grist:latest
+grist_data_dir: /var/lib/grist
+grist_edition: community
+grist_sandbox: pyodide
+grist_auth_method: none
+grist_allow_anonymous: false
+grist_default_org: Home
+grist_default_org_domain: home
+
+grist_env:
+  APP_HOME_URL: "http://localhost:8484"
+  GRIST_SINGLE_ORG: "docs"

@@ -1,0 +1,19 @@
+---
+# ──────────────────────────────────────────────────────────
+# dockhand/tasks/main.yml — lifecycle dispatcher
+#
+# Lifecycle states (set via `dockhand_state`):
+#   present     — ensure container is running (default)
+#   started     — start if stopped
+#   stopped     — stop gracefully
+#   restarted   — restart container
+#   updated     — pull latest image + recreate
+#   rolled_back — revert to previous image tag
+#   backed_up   — backup volume data only
+#   restored    — restore volume from snapshot
+#   logs        — fetch and display recent logs
+#   absent      — remove container + optional volume
+#   info        — report status + version + uptime
+# ──────────────────────────────────────────────────────────
+- name: Dispatch dockhand lifecycle
+  ansible.builtin.include_tasks: "{{ dockhand_state | default('present') }}.yml"

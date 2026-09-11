@@ -1,0 +1,50 @@
+---
+# ──────────────────────────────────────────────────────────
+# grist/tasks/present.yml — ensure running, bootstrap if fresh
+# ──────────────────────────────────────────────────────────
+- ansible.builtin.import_tasks: status.yml
+
+- name: Deploy grist container (non-NixOS hosts)
+  when: not grist_nixos_managed and grist_status == 'absent'
+  block:
+    - name: Ensure data directory exists
+      ansible.builtin.file:
+        path: "{{ grist_data_dir | default('/var/lib/grist') }}"
+        state: directory
+        mode: "0755"
+
+    - name: Pull grist image
+      community.docker.docker_image:
+        name: "{{ grist_image | default('gristlabs/grist:latest') }}"
+        source: pull
+
+    - name: Start grist container
+      community.docker.docker_container:
+        name: grist
+        image: "{{ grist_image | default('gristlabs/grist:latest') }}"
+        state: started
+        restart_policy: "{{ grist_restart_policy | default('unless-stopped') }}"
+        ports:
+          - "{{ grist_port | default(8484) }}:8484"
+        volumes:
+          - "{{ grist_data_dir | default('/var/lib/grist') }}:/persist"
+        env: "{{ grist_env | default({}) }}"
+
+- name: Bootstrap Grist if first-run (not yet configured)
+  when: grist_status == 'running'
+  block:
+    - name: Check if Quick Setup is needed
+      ansible.builtin.uri:
+        url: "http://localhost:{{ grist_port | default(8484) }}/api/setup/quick"
+        method: GET
+        status_code: [200, 404]
+      register: setup_check
+      ignore_errors: true
+
+    - name: Run Quick Setup via API
+      when: setup_check.status == 404
+      ansible.builtin.import_tasks: bootstrap.yml
+
+- name: Report grist status
+  ansible.builtin.debug:
+    msg: "grist: {{ grist_status_summary }}"

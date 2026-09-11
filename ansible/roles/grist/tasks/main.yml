@@ -1,0 +1,37 @@
+---
+# ──────────────────────────────────────────────────────────
+# grist/tasks/main.yml — lifecycle dispatcher
+#
+# Lifecycle states (set via `grist_state`):
+#   present     — ensure running, bootstrap if fresh (default)
+#   started     — start if stopped
+#   stopped     — stop gracefully
+#   restarted   — restart container
+#   updated     — pull latest + recreate (only if not NixOS-managed)
+#   backed_up   — backup persist data
+#   restored    — restore persist from snapshot
+#   logs        — fetch recent logs
+#   info        — detailed status report
+#   absent      — remove container + data (only if not NixOS-managed)
+# ──────────────────────────────────────────────────────────
+- name: Check if NixOS manages this container
+  community.docker.docker_container_info:
+    name: grist
+  register: grist_container_check
+
+- name: Set management mode
+  ansible.builtin.set_fact:
+    grist_nixos_managed: "{{ grist_container_check.exists }}"
+
+- name: Warn if lifecycle action conflicts with NixOS management
+  ansible.builtin.debug:
+    msg: >-
+      ⚠️  Grist is managed by NixOS.
+      Some lifecycle actions (stop, update, absent) are skipped.
+      Use `nixos-rebuild switch` on the host instead.
+  when:
+    - grist_nixos_managed
+    - grist_state | default('present') in ['stopped', 'updated', 'absent']
+
+- name: Dispatch grist lifecycle
+  ansible.builtin.include_tasks: "{{ grist_state | default('present') }}.yml"

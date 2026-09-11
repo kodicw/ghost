@@ -1,0 +1,40 @@
+---
+# ──────────────────────────────────────────────────────────
+# grist/tasks/restored.yml — restore grist data from snapshot
+# ──────────────────────────────────────────────────────────
+- name: Stop grist before restore
+  community.docker.docker_container:
+    name: grist
+    state: stopped
+
+- name: List available grist backups
+  ansible.builtin.find:
+    paths: /var/backups/grist
+    patterns: "grist-*.tar.gz"
+  register: available_grist_backups
+
+- name: Fail if no backups found
+  ansible.builtin.fail:
+    msg: "No grist backups found in /var/backups/grist"
+  when: available_grist_backups.files | length == 0
+
+- name: Select backup to restore
+  ansible.builtin.set_fact:
+    grist_restore_file: >-
+      {%- if grist_restore_file is defined -%}
+        {{ grist_restore_file }}
+      {%- else -%}
+        {{ (available_grist_backups.files | sort(attribute='mtime') | last).path }}
+      {%- endif -%}
+
+- name: Restore grist data from {{ grist_restore_file }}
+  ansible.builtin.shell: |
+    rm -rf {{ grist_data_dir | default('/var/lib/grist') }}/*
+    tar xzf {{ grist_restore_file }} -C {{ grist_data_dir | default('/var/lib/grist') }}
+  args:
+    executable: /bin/sh
+
+- name: Restart grist after restore
+  community.docker.docker_container:
+    name: grist
+    state: started

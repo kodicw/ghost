@@ -1,0 +1,49 @@
+---
+# ──────────────────────────────────────────────────────────
+# Top-level orchestrator
+# Usage:
+#   ansible-playbook -i inventory/production/ghost playbooks/site.yml
+#   ansible-playbook -i inventory/production/ghost playbooks/site.yml -e dockhand_state=updated
+#   ansible-playbook -i inventory/production/ghost playbooks/site.yml -e grist_state=info
+# ──────────────────────────────────────────────────────────
+- name: Gather host facts
+  hosts: all
+  gather_facts: true
+  tags: [always]
+
+- name: Apply common baseline
+  hosts: all
+  become: true
+  roles:
+    - common
+  tags: [common]
+
+- name: Manage dockhand
+  hosts: all
+  become: true
+  vars:
+    dockhand_state: "{{ dockhand_state | default('present') }}"
+  roles:
+    - role: dockhand
+      when: dockhand_state != 'absent' or dockhand_purge | default(false)
+  tags: [dockhand]
+
+- name: Manage Grist
+  hosts: all
+  become: "{{ grist_state != 'info' }}"
+  vars:
+    grist_state: "{{ grist_state | default('present') }}"
+  roles:
+    - role: grist
+      when: grist_state != 'absent' or grist_purge | default(false)
+  tags: [grist]
+
+- name: Verify all services
+  hosts: all
+  become: false
+  tasks:
+    - import_role:
+        name: common
+        tasks_from: health
+  tags: [health, always]
+  when: health_check | default(true)

@@ -1,0 +1,12 @@
+---
+# ──────────────────────────────────────────────────────────
+# Adhoc backup — volume snapshots / data export
+# Usage: ansible-playbook -i inventory/production/ghost playbooks/backup.yml
+# ──────────────────────────────────────────────────────────
+- name: Run backups
+  hosts: all
+  become: true
+  roles:
+    - role: dockhand
+      tasks_from: backup
+  tags: [backup]

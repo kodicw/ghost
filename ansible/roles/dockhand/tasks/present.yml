@@ -1,0 +1,48 @@
+---
+# ──────────────────────────────────────────────────────────
+# dockhand/tasks/present.yml — default state: ensure running
+# ──────────────────────────────────────────────────────────
+- ansible.builtin.import_tasks: status.yml
+
+- name: Deploy dockhand container
+  when: dockhand_status == 'absent'
+  block:
+    - name: Ensure dockhand data volume exists
+      community.docker.docker_volume:
+        name: "{{ dockhand_volume | default('dockhand_data') }}"
+        state: present
+
+    - name: Pull dockhand image
+      community.docker.docker_image:
+        name: "{{ dockhand_image | default('fnsys/dockhand:latest') }}"
+        source: pull
+        force_source: "{{ dockhand_force_pull | default(false) }}"
+
+    - name: Render dockhand env file
+      ansible.builtin.template:
+        src: dockhand.env.j2
+        dest: /opt/dockhand/dockhand.env
+        mode: "0600"
+
+    - name: Start dockhand container
+      community.docker.docker_container:
+        name: dockhand
+        image: "{{ dockhand_image | default('fnsys/dockhand:latest') }}"
+        state: started
+        restart_policy: "{{ dockhand_restart_policy | default('unless-stopped') }}"
+        ports:
+          - "{{ dockhand_port | default(3000) }}:3000"
+        volumes:
+          - "{{ dockhand_volume | default('dockhand_data') }}:/app/data"
+          - /var/run/docker.sock:/var/run/docker.sock
+        env_file: /opt/dockhand/dockhand.env
+        healthcheck:
+          test: ["CMD-SHELL", "curl -f http://localhost:${PORT:-3000}/ || exit 1"]
+          interval: 30s
+          timeout: 10s
+          start_period: 5s
+          retries: 3
+
+- name: Report dockhand status
+  ansible.builtin.debug:
+    msg: "dockhand: {{ dockhand_status_summary }}"

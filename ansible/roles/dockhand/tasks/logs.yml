@@ -1,0 +1,14 @@
+---
+# ──────────────────────────────────────────────────────────
+# dockhand/tasks/logs.yml — fetch recent container logs
+# ──────────────────────────────────────────────────────────
+- name: Fetch dockhand logs
+  community.docker.docker_container_logs:
+    name: dockhand
+    tail_lines: "{{ dockhand_log_lines | default(50) }}"
+    follow: false
+  register: dockhand_logs
+
+- name: Display logs
+  ansible.builtin.debug:
+    msg: "{{ dockhand_logs.stdout_lines | default([]) | join('\n') }}"

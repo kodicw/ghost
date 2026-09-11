@@ -203,14 +203,17 @@
         "nixvim": "nixvim"
       },
       "locked": {
-        "lastModified": 1778963809,
-        "narHash": "sha256-gVz/Ne/K8IOt4bHjZe5w/6jM338u6X9eRwtlksZ85/w=",
-        "path": "/home/charles/code/nix/polarbear",
-        "type": "path"
+        "lastModified": 1779723583,
+        "narHash": "sha256-U02emiUcr37o5qHU4ogKQVIGF/EOSjjRIlRSFq22sUM=",
+        "owner": "kodicw",
+        "repo": "polarbear",
+        "rev": "7d4bf33282abd43fb75c3603212743161d2bd3c9",
+        "type": "github"
       },
       "original": {
-        "path": "/home/charles/code/nix/polarbear",
-        "type": "path"
+        "owner": "kodicw",
+        "repo": "polarbear",
+        "type": "github"
       }
     },
     "preservation": {

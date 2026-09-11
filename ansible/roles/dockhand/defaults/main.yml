@@ -1,0 +1,11 @@
+---
+# ──────────────────────────────────────────────────────────
+# dockhand/defaults/main.yml — lowest priority defaults
+# ──────────────────────────────────────────────────────────
+dockhand_port: 3000
+dockhand_image: fnsys/dockhand:latest
+dockhand_volume: dockhand_data
+dockhand_restart_policy: unless-stopped
+dockhand_force_pull: false
+dockhand_backup_retention_days: 7
+dockhand_log_lines: 50

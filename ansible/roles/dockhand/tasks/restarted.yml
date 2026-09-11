@@ -1,0 +1,9 @@
+---
+# ──────────────────────────────────────────────────────────
+# dockhand/tasks/restarted.yml — stop then start
+# ──────────────────────────────────────────────────────────
+- name: Restart dockhand container
+  community.docker.docker_container:
+    name: dockhand
+    state: started
+    restart: true

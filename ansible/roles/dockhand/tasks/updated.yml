@@ -1,0 +1,47 @@
+---
+# ──────────────────────────────────────────────────────────
+# dockhand/tasks/updated.yml — pull, stop, recreate
+# ──────────────────────────────────────────────────────────
+- ansible.builtin.import_tasks: status.yml
+
+- name: Set target image
+  ansible.builtin.set_fact:
+    dockhand_target_image: "{{ dockhand_update_tag | default(dockhand_image) }}"
+
+- name: Pull new image
+  community.docker.docker_image:
+    name: "{{ dockhand_target_image }}"
+    source: pull
+    force_source: true
+
+- name: Store previous image for rollback
+  ansible.builtin.set_fact:
+    dockhand_previous_image: "{{ dockhand_image_current }}"
+
+- name: Recreate container with new image
+  community.docker.docker_container:
+    name: dockhand
+    image: "{{ dockhand_target_image }}"
+    state: started
+    restart: true
+    restart_policy: "{{ dockhand_restart_policy | default('unless-stopped') }}"
+    ports:
+      - "{{ dockhand_port | default(3000) }}:3000"
+    volumes:
+      - "{{ dockhand_volume | default('dockhand_data') }}:/app/data"
+      - /var/run/docker.sock:/var/run/docker.sock
+    env_file: /opt/dockhand/dockhand.env
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:${PORT:-3000}/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
+
+- name: Tag previous image for rollback reference
+  community.docker.docker_image:
+    name: "{{ dockhand_previous_image }}"
+    repository: "dockhand-rollback:{{ ansible_date_time.epoch }}"
+    source: local
+    force_tag: true
+  when: dockhand_previous_image | length > 0

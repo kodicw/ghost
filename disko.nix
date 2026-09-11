@@ -1,9 +1,10 @@
+{ lib, ... }:
 {
   disko.devices = {
     disk = {
       main = {
         type = "disk";
-        device = "/dev/sda";
+        device = lib.mkDefault "/dev/sda";
         content = {
           type = "gpt";
           partitions = {
@@ -21,7 +22,7 @@
               size = "100%";
               content = {
                 type = "btrfs";
-                extraArgs = [ "-f" ];
+                extraArgs = [ "-f" "-L" "nixos" ];
                 subvolumes = {
                   "/nix" = {
                     mountpoint = "/nix";

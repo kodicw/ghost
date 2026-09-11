@@ -16,13 +16,26 @@
     ];
   };
 
-  # Persistence Mount
-  fileSystems."/persistent".neededForBoot = true;
+  fileSystems."/nix" = {
+    device = lib.mkForce "/dev/disk/by-label/nixos";
+    fsType = "btrfs";
+    options = [ "subvol=nix" "compress=zstd" "noatime" ];
+    neededForBoot = true;
+  };
+
+  fileSystems."/persistent" = {
+    device = lib.mkForce "/dev/disk/by-label/nixos";
+    fsType = "btrfs";
+    options = [ "subvol=persistent" "compress=zstd" "noatime" ];
+    neededForBoot = true;
+  };
 
   # Generic Bootloader (for persistent install)
   boot.loader.systemd-boot.enable = lib.mkDefault true;
+  boot.loader.systemd-boot.graceful = true;
   boot.loader.efi.canTouchEfiVariables = lib.mkDefault true;
 
+  boot.initrd.supportedFilesystems = [ "btrfs" ];
   boot.initrd.systemd.enable = true;
   boot.initrd.availableKernelModules = [
     "xhci_pci"
@@ -37,7 +50,7 @@
   ];
 
   boot.initrd.kernelModules = [ "btrfs" ];
-  boot.kernelModules = [ "kvm-intel" "kvm-amd" ];
+  boot.kernelModules = [ "kvm-intel" ];
   
   hardware.enableRedistributableFirmware = true;
   networking.useDHCP = lib.mkDefault true;

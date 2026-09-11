@@ -1,0 +1,33 @@
+---
+# ──────────────────────────────────────────────────────────
+# dockhand/tasks/backed_up.yml — volume snapshot
+# ──────────────────────────────────────────────────────────
+- name: Ensure backup directory exists
+  ansible.builtin.file:
+    path: /var/backups/dockhand
+    state: directory
+    mode: "0755"
+
+- name: Snapshot dockhand data volume via tar
+  ansible.builtin.shell: |
+    docker run --rm \
+      -v {{ dockhand_volume | default('dockhand_data') }}:/source:ro \
+      -v /var/backups/dockhand:/dest \
+      alpine \
+      tar czf /dest/dockhand-{{ ansible_date_time.date }}-{{ ansible_date_time.epoch }}.tar.gz -C /source .
+  args:
+    executable: /bin/sh
+    creates: "/var/backups/dockhand/dockhand-{{ ansible_date_time.date }}-*.tar.gz"
+
+- name: Prune backups older than {{ dockhand_backup_retention_days }} days
+  ansible.builtin.find:
+    paths: /var/backups/dockhand
+    patterns: "dockhand-*.tar.gz"
+    age: "+{{ dockhand_backup_retention_days | default(7) }}d"
+  register: stale_backups
+
+- name: Remove stale backups
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ stale_backups.files }}"

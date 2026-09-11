@@ -1,0 +1,18 @@
+---
+# ──────────────────────────────────────────────────────────
+# grist/tasks/stopped.yml — graceful stop
+# NOTE: On NixOS-managed hosts, NixOS will restore
+#       the container on the next rebuild.
+# ──────────────────────────────────────────────────────────
+- ansible.builtin.import_tasks: status.yml
+
+- name: Warn if NixOS-managed
+  ansible.builtin.debug:
+    msg: "⚠️  Grist is NixOS-managed. It will be restored on next nixos-rebuild."
+  when: grist_nixos_managed
+
+- name: Stop grist container
+  community.docker.docker_container:
+    name: grist
+    state: stopped
+  when: grist_status == 'running'

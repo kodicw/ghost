@@ -1,0 +1,9 @@
+---
+# ──────────────────────────────────────────────────────────
+# grist/defaults/main.yml — lowest priority defaults
+# ──────────────────────────────────────────────────────────
+grist_port: 8484
+grist_image: gristlabs/grist:latest
+grist_edition: community
+grist_sandbox: pyodide
+grist_auth_method: none

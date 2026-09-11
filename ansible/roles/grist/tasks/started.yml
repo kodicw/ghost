@@ -1,0 +1,11 @@
+---
+# ──────────────────────────────────────────────────────────
+# grist/tasks/started.yml — ensure running
+# ──────────────────────────────────────────────────────────
+- ansible.builtin.import_tasks: status.yml
+
+- name: Start grist container
+  community.docker.docker_container:
+    name: grist
+    state: started
+  when: grist_status != 'running'

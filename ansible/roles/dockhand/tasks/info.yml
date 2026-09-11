@@ -1,0 +1,28 @@
+---
+# ──────────────────────────────────────────────────────────
+# dockhand/tasks/info.yml — detailed container report
+# ──────────────────────────────────────────────────────────
+- ansible.builtin.import_tasks: status.yml
+
+- name: Gather dockhand resource usage
+  community.docker.docker_container_info:
+    name: dockhand
+  register: dockhand_full
+
+- name: Display dockhand info
+  ansible.builtin.debug:
+    msg:
+      - "┌─ dockhand ──────────────────────────────────"
+      - "│ Status:      {{ dockhand_status_summary }}"
+      - "│ Image:       {{ dockhand_image_current }}"
+      - "│ Created:     {{ dockhand_created_at }}"
+      - "│ Port:        {{ dockhand_port | default(3000) }} → 3000"
+      - "│ Restart:     {{ dockhand_restart_policy | default('unless-stopped') }}"
+      - "│ Volume:      {{ dockhand_volume | default('dockhand_data') }}"
+      - "│ Socket:      /var/run/docker.sock → /var/run/docker.sock"
+      {% if dockhand_full.container is defined and dockhand_full.container.State is defined %}
+      - "│ PID:         {{ dockhand_full.container.State.Pid }}"
+      - "│ StartedAt:   {{ dockhand_full.container.State.StartedAt }}"
+      - "│ Health:      {{ dockhand_full.container.State.Health.Status | default('—') }}"
+      {% endif %}
+      - "└─────────────────────────────────────────────"

@@ -1,0 +1,17 @@
+---
+# ──────────────────────────────────────────────────────────
+# Ghost group vars — references vault for secrets
+# ──────────────────────────────────────────────────────────
+
+grist_env:
+  APP_HOME_URL: "http://ghost.local:8484"
+  GRIST_SINGLE_ORG: "docs"
+  GRIST_SESSION_SECRET: "{{ vault_grist_session_secret }}"
+  GRIST_ADMIN_EMAIL: "{{ vault_grist_admin_email }}"
+
+dockhand_env:
+  PORT: "3000"
+  HOST: "0.0.0.0"
+  DATA_DIR: "/app/data"
+  PUID: "1001"
+  PGID: "1001"

@@ -1,0 +1,30 @@
+---
+# ──────────────────────────────────────────────────────────
+# grist/tasks/updated.yml — pull new image + recreate
+# NOTE: Skipped on NixOS-managed hosts; use nixos-rebuild instead.
+# ──────────────────────────────────────────────────────────
+- ansible.builtin.import_tasks: status.yml
+
+- name: Fail if NixOS-managed
+  ansible.builtin.fail:
+    msg: "Grist is NixOS-managed. Update via nixos-rebuild, not Ansible."
+  when: grist_nixos_managed
+
+- name: Pull new grist image
+  community.docker.docker_image:
+    name: "{{ grist_update_tag | default(grist_image) }}"
+    source: pull
+    force_source: true
+
+- name: Recreate grist container
+  community.docker.docker_container:
+    name: grist
+    image: "{{ grist_update_tag | default(grist_image) }}"
+    state: started
+    restart: true
+    restart_policy: "{{ grist_restart_policy | default('unless-stopped') }}"
+    ports:
+      - "{{ grist_port | default(8484) }}:8484"
+    volumes:
+      - "{{ grist_data_dir | default('/var/lib/grist') }}:/persist"
+    env: "{{ grist_env | default({}) }}"

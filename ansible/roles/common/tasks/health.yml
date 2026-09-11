@@ -1,0 +1,38 @@
+---
+# ──────────────────────────────────────────────────────────
+# common/tasks/health.yml — generic HTTP health checks
+# ──────────────────────────────────────────────────────────
+
+- name: Check Grist health endpoint
+  ansible.builtin.uri:
+    url: "http://localhost:{{ grist_port | default(8484) }}/health"
+    status_code: 200
+  register: grist_health
+  retries: "{{ health_retries | default(5) }}"
+  delay: "{{ health_delay | default(5) }}"
+  until: grist_health.status == 200
+  ignore_errors: true
+  when: grist_port is defined
+
+- name: Report Grist status
+  ansible.builtin.debug:
+    msg: >-
+      Grist {{ '✅ healthy' if grist_health.status == 200 else '❌ unhealthy' }}
+      on {{ inventory_hostname }}:{{ grist_port | default(8484) }}
+
+- name: Check dockhand health endpoint
+  ansible.builtin.uri:
+    url: "http://localhost:{{ dockhand_port | default(3000) }}/"
+    status_code: 200
+  register: dockhand_health
+  retries: "{{ health_retries | default(5) }}"
+  delay: "{{ health_delay | default(5) }}"
+  until: dockhand_health.status == 200
+  ignore_errors: true
+  when: dockhand_port is defined
+
+- name: Report dockhand status
+  ansible.builtin.debug:
+    msg: >-
+      Dockhand {{ '✅ healthy' if dockhand_health.status == 200 else '❌ unhealthy' }}
+      on {{ inventory_hostname }}:{{ dockhand_port | default(3000) }}

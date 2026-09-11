@@ -1,0 +1,11 @@
+---
+# ──────────────────────────────────────────────────────────
+# dockhand/tasks/stopped.yml — graceful stop
+# ──────────────────────────────────────────────────────────
+- ansible.builtin.import_tasks: status.yml
+
+- name: Stop dockhand container
+  community.docker.docker_container:
+    name: dockhand
+    state: stopped
+  when: dockhand_status == 'running'

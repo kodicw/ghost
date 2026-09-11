@@ -1,0 +1,47 @@
+---
+# ──────────────────────────────────────────────────────────
+# Grist — full lifecycle management
+#
+# Usage:
+#   ansible-playbook -i inventory/production/ghost playbooks/grist.yml \ 
+#     -e grist_state=present
+#   ansible-playbook -i inventory/production/ghost playbooks/grist.yml \ 
+#     -e grist_state=restarted
+#   ansible-playbook -i inventory/production/ghost playbooks/grist.yml \ 
+#     -e grist_state=backed_up  -e grist_backup_retention_days=14
+#   ansible-playbook -i inventory/production/ghost playbooks/grist.yml \ 
+#     -e grist_state=restored
+#   ansible-playbook -i inventory/production/ghost playbooks/grist.yml \ 
+#     -e grist_state=info
+#   ansible-playbook -i inventory/production/ghost playbooks/grist.yml \ 
+#     -e grist_state=logs
+#   ansible-playbook -i inventory/production/ghost playbooks/grist.yml \ 
+#     -e grist_state=stopped
+# ──────────────────────────────────────────────────────────
+- name: Gather facts
+  hosts: all
+  gather_facts: true
+
+- name: Grist lifecycle — {{ grist_state | default('present') }}
+  hosts: all
+  become: "{{ grist_state not in ['info', 'logs'] }}"
+  vars:
+    grist_state: "{{ grist_state | default('present') }}"
+  roles:
+    - grist
+  post_tasks:
+    - name: Verify grist is healthy
+      when: grist_state in ['present', 'started', 'restarted']
+      block:
+        - name: Wait for health check
+          ansible.builtin.uri:
+            url: "http://localhost:{{ grist_port | default(8484) }}/health"
+            status_code: 200
+          retries: 5
+          delay: 3
+          register: health
+          until: health.status == 200
+
+        - name: Grist is healthy
+          ansible.builtin.debug:
+            msg: "✅ grist responded on port {{ grist_port | default(8484) }}"

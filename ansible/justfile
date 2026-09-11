@@ -1,0 +1,160 @@
+# ──────────────────────────────────────────────────────────
+# Ghost Ansible — justfile
+#   just install            Install Galaxy collections
+#   just vault-encrypt      Encrypt vault file
+#   just vault-decrypt      Decrypt vault file
+#   just vault-edit         Edit vault file
+#   just site               Full deploy
+#   just status             Info on all services
+#   just health             Health check only
+#   just backup             Backup both services
+#   just dockhand STATE     Dockhand lifecycle (present/info/logs/restarted/...)
+#   just grist STATE        Grist lifecycle (present/info/logs/restarted/...)
+#   just dockhand-update    Update dockhand image
+#   just dockhand-rollback  Rollback dockhand
+#   just dockhand-logs N    Show last N dockhand log lines
+#   just grist-logs N       Show last N grist log lines
+# ──────────────────────────────────────────────────────────
+
+# ── Project paths ────────────────────────────────────────
+inventory := "inventory/production/ghost"
+playbooks := "playbooks"
+vault := inventory / "group_vars/vault.yml"
+
+# ── Vault ────────────────────────────────────────────────
+vault-args := "--ask-vault-pass"
+vault-file := " --vault-password-file " + vault_password_file if vault_password_file != "" else vault-args
+
+# Install Galaxy collections
+install:
+    ansible-galaxy collection install -r requirements.yml
+
+# Encrypt vault file
+vault-encrypt:
+    ansible-vault encrypt {{ vault }}
+
+# Decrypt vault file
+vault-decrypt:
+    ansible-vault decrypt {{ vault }}
+
+# Edit vault file
+vault-edit:
+    ansible-vault edit {{ vault }}
+
+# ── Deploy ───────────────────────────────────────────────
+
+# Full site deploy (common → dockhand → grist → health)
+site:
+    ansible-playbook -i {{ inventory }} {{ playbooks }}/site.yml {{ vault-file }}
+
+# Just dockhand (default: present = ensure running)
+dockhand state="present":
+    ansible-playbook -i {{ inventory }} {{ playbooks }}/dockhand.yml \
+        -e dockhand_state={{ state }} \
+        {{ vault-file }}
+
+# Just grist (default: present = ensure running + bootstrap if fresh)
+grist state="present":
+    ansible-playbook -i {{ inventory }} {{ playbooks }}/grist.yml \
+        -e grist_state={{ state }} \
+        {{ vault-file }}
+
+# ── Dockhand lifecycle shortcuts ─────────────────────────
+
+# Show dockhand container info
+dockhand-info:
+    just dockhand info
+
+# Restart dockhand
+dockhand-restart:
+    just dockhand restarted
+
+# Stop dockhand
+dockhand-stop:
+    just dockhand stopped
+
+# Start dockhand
+dockhand-start:
+    just dockhand started
+
+# Update dockhand to a specific image tag (e.g. TAG=fnsys/dockhand:v2)
+dockhand-update tag="fnsys/dockhand:latest":
+    ansible-playbook -i {{ inventory }} {{ playbooks }}/dockhand.yml \
+        -e dockhand_state=updated \
+        -e dockhand_update_tag={{ tag }} \
+        {{ vault-file }}
+
+# Rollback dockhand to previous image
+dockhand-rollback:
+    ansible-playbook -i {{ inventory }} {{ playbooks }}/dockhand.yml \
+        -e dockhand_state=rolled_back \
+        {{ vault-file }}
+
+# Show last N dockhand log lines (default 50)
+dockhand-logs n="50":
+    ansible-playbook -i {{ inventory }} {{ playbooks }}/dockhand.yml \
+        -e dockhand_state=logs \
+        -e dockhand_log_lines={{ n }}
+
+# Backup dockhand volume
+dockhand-backup:
+    ansible-playbook -i {{ inventory }} {{ playbooks }}/dockhand.yml \
+        -e dockhand_state=backed_up
+
+# Remove dockhand (add PURGE=true to also delete volume)
+dockhand-remove purge="false":
+    ansible-playbook -i {{ inventory }} {{ playbooks }}/dockhand.yml \
+        -e dockhand_state=absent \
+        -e dockhand_purge_volume={{ purge }}
+
+# ── Grist lifecycle shortcuts ────────────────────────────
+
+# Show grist container info
+grist-info:
+    just grist info
+
+# Restart grist
+grist-restart:
+    just grist restarted
+
+# Show last N grist log lines (default 50)
+grist-logs n="50":
+    ansible-playbook -i {{ inventory }} {{ playbooks }}/grist.yml \
+        -e grist_state=logs \
+        -e grist_log_lines={{ n }}
+
+# Backup grist data + export documents via API
+grist-backup:
+    ansible-playbook -i {{ inventory }} {{ playbooks }}/grist.yml \
+        -e grist_state=backed_up \
+        {{ vault-file }}
+
+# ── Combined ─────────────────────────────────────────────
+
+# Health check on all services
+health:
+    ansible-playbook -i {{ inventory }} {{ playbooks }}/health-check.yml
+
+# Backup both services
+backup:
+    just grist-backup
+    just dockhand-backup
+
+# Status of all services
+status:
+    just dockhand info
+    just grist info
+    just health
+
+# ── Multi-client ─────────────────────────────────────────
+
+# Run any recipe against a different client
+# Usage: just client=new-client site
+client c:
+    just --justfile {{ justfile() }} \
+        --set inventory "inventory/production/{{ c }}" \
+        {{ command_line_args() }}
+
+# List all available targets
+default:
+    @just --list

@@ -1,0 +1,53 @@
+---
+# ──────────────────────────────────────────────────────────
+# grist/tasks/backed_up.yml — backup persistant data
+# ──────────────────────────────────────────────────────────
+- name: Ensure backup directory exists
+  ansible.builtin.file:
+    path: /var/backups/grist
+    state: directory
+    mode: "0755"
+
+- name: Snapshot grist data directory
+  ansible.builtin.shell: |
+    tar czf /var/backups/grist/grist-{{ ansible_date_time.date }}-{{ ansible_date_time.epoch }}.tar.gz \
+      -C {{ grist_data_dir | default('/var/lib/grist') }} .
+  args:
+    executable: /bin/sh
+    creates: "/var/backups/grist/grist-{{ ansible_date_time.date }}-*.tar.gz"
+
+- name: Prune backups older than {{ grist_backup_retention_days }} days
+  ansible.builtin.find:
+    paths: /var/backups/grist
+    patterns: "grist-*.tar.gz"
+    age: "+{{ grist_backup_retention_days | default(7) }}d"
+  register: stale_grist_backups
+
+- name: Remove stale grist backups
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ stale_grist_backups.files }}"
+
+- name: List document IDs via Grist API (if configured)
+  ansible.builtin.uri:
+    url: "http://localhost:{{ grist_port | default(8484) }}/api/docs"
+    method: GET
+    status_code: 200
+    headers:
+      Authorization: "Bearer {{ vault_grist_api_key | default('') }}"
+  register: grist_docs
+  ignore_errors: true
+
+- name: Export each document via Grist API
+  when: grist_docs.status is defined and grist_docs.status == 200
+  ansible.builtin.uri:
+    url: "http://localhost:{{ grist_port | default(8484) }}/api/docs/{{ item.id }}/download"
+    dest: "/var/backups/grist/doc-{{ item.id }}-{{ ansible_date_time.date }}.grist"
+    method: GET
+    headers:
+      Authorization: "Bearer {{ vault_grist_api_key | default('') }}"
+  loop: "{{ grist_docs.json | default([]) }}"
+  loop_control:
+    label: "doc {{ item.id }}"
+  ignore_errors: true

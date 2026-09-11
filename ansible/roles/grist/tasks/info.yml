@@ -1,0 +1,30 @@
+---
+# ──────────────────────────────────────────────────────────
+# grist/tasks/info.yml — detailed container report
+# ──────────────────────────────────────────────────────────
+- ansible.builtin.import_tasks: status.yml
+
+- name: Gather grist resource usage
+  community.docker.docker_container_info:
+    name: grist
+  register: grist_full
+
+- name: Display grist info
+  ansible.builtin.debug:
+    msg:
+      - "┌─ grist ───────────────────────────────────"
+      - "│ Status:      {{ grist_status_summary }}"
+      - "│ Image:       {{ grist_image_current }}"
+      - "│ Created:     {{ grist_created_at }}"
+      - "│ Port:        {{ grist_port | default(8484) }} → 8484"
+      - "│ Data:        {{ grist_data_dir | default('/var/lib/grist') }} → /persist"
+      - "│ Managed by:  {{ 'NixOS' if grist_nixos_managed else 'Ansible' }}"
+      {% if grist_full.container is defined and grist_full.container.State is defined %}
+      - "│ PID:         {{ grist_full.container.State.Pid }}"
+      - "│ StartedAt:   {{ grist_full.container.State.StartedAt }}"
+      {% endif %}
+      - "│ Env:"
+      {% for key, value in grist_env.items() %}
+      - "│   {{ key }}={{ value }}"
+      {% endfor %}
+      - "└─────────────────────────────────────────────"

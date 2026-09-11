@@ -1,0 +1,9 @@
+---
+# ──────────────────────────────────────────────────────────
+# grist/tasks/restarted.yml — restart container
+# ──────────────────────────────────────────────────────────
+- name: Restart grist container
+  community.docker.docker_container:
+    name: grist
+    state: started
+    restart: true

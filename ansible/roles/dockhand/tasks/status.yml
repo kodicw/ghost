@@ -1,0 +1,36 @@
+---
+# ──────────────────────────────────────────────────────────
+# dockhand/tasks/status.yml — inspect container state
+# Sets: dockhand_status (running / stopped / absent)
+#       dockhand_status_summary (human-readable)
+#       dockhand_image_current (current image digest)
+#       dockhand_created_at
+# ──────────────────────────────────────────────────────────
+- name: Gather dockhand container info
+  community.docker.docker_container_info:
+    name: dockhand
+  register: dockhand_info
+
+- name: Classify container state
+  ansible.builtin.set_fact:
+    dockhand_status: >-
+      {%- if not dockhand_info.exists -%}absent
+      {%- elif dockhand_info.container.State.Status == 'running' -%}running
+      {%- elif dockhand_info.container.State.Status == 'paused' -%}paused
+      {%- else -%}stopped
+      {%- endif -%}
+    dockhand_image_current: "{{ dockhand_info.container.Image | default('') }}"
+    dockhand_created_at: "{{ dockhand_info.container.Created | default('') }}"
+
+- name: Build status summary
+  ansible.builtin.set_fact:
+    dockhand_status_summary: >-
+      {%- if dockhand_status == 'absent' -%}❌ not deployed
+      {%- elif dockhand_status == 'running' -%}
+        ✅ running — image: {{ dockhand_image_current | truncate(19, True, '…') }}
+        {%- if dockhand_info.container.State.Health is defined and dockhand_info.container.State.Health.Status is defined -%}
+          , health: {{ dockhand_info.container.State.Health.Status }}
+        {%- endif -%}
+      {%- elif dockhand_status == 'stopped' -%}⏸️  stopped
+      {%- else -%}⚠️  {{ dockhand_status }}
+      {%- endif -%}

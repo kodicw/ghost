@@ -1,0 +1,42 @@
+---
+# ──────────────────────────────────────────────────────────
+# dockhand/tasks/rolled_back.yml — revert to previous version
+# ──────────────────────────────────────────────────────────
+- ansible.builtin.import_tasks: status.yml
+
+- name: Find rollback images
+      community.docker.docker_images:
+        name: dockhand-rollback
+      register: rollback_images
+      ignore_errors: true
+
+- name: Select rollback target
+  ansible.builtin.set_fact:
+    dockhand_rollback_image: >-
+      {%- if dockhand_rollback_tag is defined -%}
+        dockhand-rollback:{{ dockhand_rollback_tag }}
+      {%- elif rollback_images.images | length > 0 -%}
+        {{ rollback_images.images | sort(attribute='created') | last | json_query('repo_tags[0]') }}
+      {%- else -%}
+        {{ dockhand_image }}
+      {%- endif -%}
+
+- name: Rollback dockhand to {{ dockhand_rollback_image }}
+  community.docker.docker_container:
+    name: dockhand
+    image: "{{ dockhand_rollback_image }}"
+    state: started
+    restart: true
+    restart_policy: "{{ dockhand_restart_policy | default('unless-stopped') }}"
+    ports:
+      - "{{ dockhand_port | default(3000) }}:3000"
+    volumes:
+      - "{{ dockhand_volume | default('dockhand_data') }}:/app/data"
+      - /var/run/docker.sock:/var/run/docker.sock
+    env_file: /opt/dockhand/dockhand.env
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:${PORT:-3000}/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
