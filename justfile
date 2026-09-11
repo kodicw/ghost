@@ -45,6 +45,10 @@ test:
 check-vm *args:
     nix build .#checks.x86_64-linux.persistence -L {{args}}
 
+# Verify a running Ghost host's disk config via SSH (add --reboot to test persistence)
+verify-host target *args:
+    ./scripts/verify-host.sh {{target}} {{args}}
+
 # ── GCP Infrastructure (OpenTofu) ────────────────────────────────
 
 # Initialize OpenTofu with remote state
