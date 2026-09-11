@@ -3,3 +3,21 @@ result-*
 .direnv
 .env
 .envrc
+
+# Secrets & private keys
+**/vault.yml
+!**/vault.yml.example
+*.pem
+*.key
+*id_rsa*
+*id_ed25519*
+
+# OpenTofu / Terraform
+infra/gcp/.terraform/
+infra/gcp/terraform.tfvars
+infra/gcp/*.tfstate
+infra/gcp/*.tfstate.*.backup
+infra/gcp/crash.log
+infra/gcp/override.tf
+infra/gcp/override.tf.json
+
